@@ -16,9 +16,11 @@ docker-shell: build-container
 
 # Install all dependencies as well as Icarus in developer mode
 install:
-	pip install --upgrade pip setuptools
-	pip install --upgrade -r requirements.txt
-	pip install --upgrade -e .
+	uv venv
+	source .venv/bin/activate
+	uv pip install --upgrade pip setuptools
+	uv pip install --upgrade -r requirements.txt
+	uv pip install --upgrade -e .
 
 # Run all test cases
 test:

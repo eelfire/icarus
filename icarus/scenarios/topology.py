@@ -844,3 +844,110 @@ def topology_rocketfuel_latency(
     for v in routers:
         fnss.add_stack(topology, v, "router")
     return IcnTopology(topology)
+
+
+@register_topology_factory("DNS")
+def topology_dns(n, delay=1, **kwargs):
+    # currently this is same as PATH
+    topology = fnss.line_topology(n)
+    receivers = [0]
+    routers = range(1, n - 1)
+    sources = [n - 1]
+    topology.graph["icr_candidates"] = set(routers)
+    for v in sources:
+        fnss.add_stack(topology, v, "source")
+    for v in receivers:
+        fnss.add_stack(topology, v, "receiver")
+    for v in routers:
+        fnss.add_stack(topology, v, "router")
+    # set weights and delays on all links
+    fnss.set_weights_constant(topology, 1.0)
+    fnss.set_delays_constant(topology, delay, "ms")
+    # label links as internal or external
+    for u, v in topology.edges():
+        topology.adj[u][v]["type"] = "internal"
+    return IcnTopology(topology)
+
+
+@register_topology_factory("DNS_HIERARCHY")
+def dns_hierarchy(rs, tld, auth, resolvers, clients, routers, **kwargs):
+    """
+    Create a DNS hierarchy topology
+    """
+    topology = fnss.topologies.topology.Topology()
+
+    nodes = list(range(rs + tld + auth + resolvers + clients + routers))
+    # print(nodes)
+    
+    # add nodes to the graph
+    topology.add_nodes_from(nodes)
+    
+    # add edges to the graph
+    for i in range(rs):
+        for j in range(tld):
+            topology.add_edge(i, rs + j)
+    for i in range(tld):
+        for j in range(auth):
+            topology.add_edge(rs + i, rs + tld + j)
+    for i in range(auth):
+        for j in range(resolvers):
+            topology.add_edge(rs + tld + i, rs + tld + auth + j)
+    for i in range(resolvers):
+        for j in range(clients):
+            topology.add_edge(rs + tld + auth + i, rs + tld + auth + resolvers + j)
+    for i in range(resolvers):
+        for j in range(routers):
+            topology.add_edge(rs + tld + auth + i, rs + tld + auth + resolvers + clients + j)
+    for i in range(clients):
+        for j in range(routers):
+            topology.add_edge(
+                rs + tld + auth + resolvers + i, rs + tld + auth + resolvers + clients + j
+            )
+
+    # TODO: better naming
+    root_servers = list(range(rs))
+    tld_servers = list(range(rs, rs + tld))
+    auth_servers = list(range(rs + tld, rs + tld + auth))
+    resolverss = list(range(rs + tld + auth, rs + tld + auth + resolvers))
+    clientss = list(range(rs + tld + auth + resolvers, rs + tld + auth + resolvers + clients))
+    routerss = list(
+        range(
+            rs + tld + auth + resolvers + clients, rs + tld + auth + resolvers + clients + routers
+        )
+    )
+    print(
+        len(root_servers),
+        len(tld_servers),
+        len(auth_servers),
+        len(resolverss),
+        len(clientss),
+        len(routerss),
+    )
+
+    # add stacks to nodes
+    for v in root_servers:
+        fnss.add_stack(topology, v, "receiver")
+    for v in tld_servers:
+        fnss.add_stack(topology, v, "tld_server")
+    for v in auth_servers:
+        fnss.add_stack(topology, v, "auth_server")
+    for v in resolverss:
+        fnss.add_stack(topology, v, "resolver")
+    for v in clientss:
+        fnss.add_stack(topology, v, "source")
+    for v in routerss:
+        fnss.add_stack(topology, v, "router")
+
+    # set the icr_candidates
+    topology.graph["icr_candidates"] = set(routerss)
+
+    # set weights and delays on all links
+    fnss.set_weights_constant(topology, 1.0)
+    fnss.set_delays_constant(topology, 1, "ms")
+    # label links as internal or external
+    for u, v in topology.edges():
+        topology.adj[u][v]["type"] = "internal"
+
+    # print(topology.nodes())
+
+    return IcnTopology(topology)

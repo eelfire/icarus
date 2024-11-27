@@ -329,6 +329,9 @@ def run_scenario(settings, params, curr_exp, n_exp):
         logger.error("Received keyboard interrupt. Terminating")
         sys.exit(-signal.SIGINT)
     except Exception as e:
+        print(e)
+        # print traceback
+        print(traceback.format_exc())
         err_type = str(type(e)).split("'")[1].split(".")[1]
         err_message = e.message
         logger.error(

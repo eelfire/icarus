@@ -398,3 +398,12 @@ class YCSBWorkload:
             yield event
             req_counter += 1
         return
+
+
+@register_workload("DNS_QUERIES_RESPONSES")
+class DNSWorkload:
+    def __init__(self):
+        pass
+
+    def __iter__(self):
+        pass
