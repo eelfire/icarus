@@ -953,142 +953,239 @@ def dns_hierarchy(rs, tld, auth, resolvers, clients, routers, **kwargs):
     return IcnTopology(topology)
 
 @register_topology_factory("DNS_HIERARCHY_LINEAR")
+# def topology_dns_hierarchy_linear(**kwargs):
+#     """
+#     Creates a DNS hierarchy topology with a linear chain of routers between name servers and receivers.
+
+#     Structure:
+#     - Root Servers: 13 nodes.
+#     - TLD Servers: 10 nodes.
+#     - Name Servers: 1000 nodes, one for each domain.
+#     - Pipe (Routers): A linear chain of routers between name servers and receivers.
+#     - Receivers: Client nodes requesting DNS resolution.
+
+#     Returns:
+#         fnss.Topology: The generated topology.
+#     """
+#     topology = nx.DiGraph()
+
+#     # Number of entities
+#     num_root_servers = 13
+#     num_tld_servers = 10
+#     num_name_servers = 1000
+#     num_receivers = 50
+#     num_routers = 10  # Length of the "pipe"
+
+#     # Root Servers
+#     root_servers = ["root_{}".format(i) for i in range(num_root_servers)]
+#     topology.add_nodes_from(root_servers)
+
+#     # TLD Servers
+#     tld_servers = ["tld_{}".format(i) for i in range(num_tld_servers)]
+#     topology.add_nodes_from(tld_servers)
+
+#     # Name Servers
+#     name_servers = ["name_server_{}".format(i) for i in range(num_name_servers)]
+#     topology.add_nodes_from(name_servers)
+
+#     # Routers (Linear chain as a pipe)
+#     routers = ["router_{}".format(i) for i in range(num_routers)]
+#     topology.add_nodes_from(routers)
+
+#     # Receivers
+#     receivers = ["receiver_{}".format(i) for i in range(num_receivers)]
+#     topology.add_nodes_from(receivers)
+
+#     # Connections: Root Servers → TLD Servers
+#     for root in root_servers:
+#         for tld in tld_servers:
+#             topology.add_edge(root, tld, type="dns_link", delay=1)
+
+#     # Connections: TLD Servers → Name Servers
+#     for tld in tld_servers:
+#         for name_server in name_servers:
+#             topology.add_edge(tld, name_server, type="dns_link", delay=2)
+
+#     # Connections: Name Servers → First Router in Pipe
+#     first_router = routers[0]
+#     for name_server in name_servers:
+#         topology.add_edge(name_server, first_router, type="dns_link", delay=2)
+
+#     # Connections: Linear chain of routers (Pipe)
+#     for i in range(num_routers - 1):
+#         topology.add_edge(routers[i], routers[i + 1], type="dns_link", delay=1)
+
+#     # Connections: Last Router → Receivers
+#     last_router = routers[-1]
+#     for receiver in receivers:
+#         topology.add_edge(last_router, receiver, type="dns_link", delay=2)
+
+#     # Add stacks for all nodes
+#     for root in root_servers:
+#         fnss.add_stack(topology, root, "root_server")
+#     for tld in tld_servers:
+#         fnss.add_stack(topology, tld, "tld_server")
+#     for name_server in name_servers:
+#         fnss.add_stack(topology, name_server, "name_server", contents=[int(name_server.split("_")[2])])
+#     for router in routers:
+#         fnss.add_stack(topology, router, "router", cache_size=0)  # No caching in DNS hierarchy routers
+#     for receiver in receivers:
+#         fnss.add_stack(topology, receiver, "receiver")
+
+#     return topology
+@register_topology_factory("DNS_HIERARCHY_LINEAR")
 def topology_dns_hierarchy_linear(**kwargs):
+    """Return a DNS Hierarchy Linear topology
+
+    Parameters
+    ----------
+    seed : int, optional
+        The seed used for random number generation
+
+    Returns
+    -------
+    topology : fnss.Topology
+        The topology object
     """
-    Creates a DNS hierarchy topology with a linear chain of routers between name servers and receivers.
+    # Create a hierarchical topology based on a linear model
+    topology = fnss.line_topology(10).to_undirected()
 
-    Structure:
-    - Root Servers: 13 nodes.
-    - TLD Servers: 10 nodes.
-    - Name Servers: 1000 nodes, one for each domain.
-    - Pipe (Routers): A linear chain of routers between name servers and receivers.
-    - Receivers: Client nodes requesting DNS resolution.
+    # Define levels in hierarchy
+    level_1 = [0, 1, 2]  # Top level
+    level_2 = [3, 4, 5]  # Mid level
+    level_3 = [6, 7, 8, 9]  # Bottom level
 
-    Returns:
-        fnss.Topology: The generated topology.
-    """
-    topology = nx.DiGraph()
+    # Sources, receivers, and routers
+    sources = level_1
+    receivers = level_3
+    routers = level_2
 
-    # Number of entities
-    num_root_servers = 13
-    num_tld_servers = 10
-    num_name_servers = 1000
-    num_receivers = 50
-    num_routers = 10  # Length of the "pipe"
+    # Add stacks to nodes
+    for v in sources:
+        fnss.add_stack(topology, v, "source")
+    for v in receivers:
+        fnss.add_stack(topology, v, "receiver")
+    for v in routers:
+        fnss.add_stack(topology, v, "router")
 
-    # Root Servers
-    root_servers = ["root_{}".format(i) for i in range(num_root_servers)]
-    topology.add_nodes_from(root_servers)
+    # Set weights and delays on all links
+    fnss.set_weights_constant(topology, 1.0)
+    fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+    # set the icr_candidates
+    topology.graph["icr_candidates"] = set(routers)
+    
+    # Label links as internal or external
+    for u, v in topology.edges():
+        if u in sources or v in sources:
+            topology.adj[u][v]["type"] = "external"
+            fnss.set_weights_constant(topology, 1000.0, [(u, v)])
+            fnss.set_delays_constant(topology, EXTERNAL_LINK_DELAY, "ms", [(u, v)])
+        else:
+            topology.adj[u][v]["type"] = "internal"
 
-    # TLD Servers
-    tld_servers = ["tld_{}".format(i) for i in range(num_tld_servers)]
-    topology.add_nodes_from(tld_servers)
+    return IcnTopology(topology)
 
-    # Name Servers
-    name_servers = ["name_server_{}".format(i) for i in range(num_name_servers)]
-    topology.add_nodes_from(name_servers)
 
-    # Routers (Linear chain as a pipe)
-    routers = ["router_{}".format(i) for i in range(num_routers)]
-    topology.add_nodes_from(routers)
+# @register_topology_factory("DNSR_LINEAR")
+# def topology_dnsr_linear(**kwargs):
+#     """
+#     Creates a linear-chain topology for the NDN-inspired DNS Renaissance protocol.
 
-    # Receivers
-    receivers = ["receiver_{}".format(i) for i in range(num_receivers)]
-    topology.add_nodes_from(receivers)
+#     Structure:
+#     - Sources (Name Servers): 1000 nodes, one for each domain.
+#     - Pipe (Routers): A linear chain of routers.
+#     - Receivers: Client nodes at the end of the pipe.
 
-    # Connections: Root Servers → TLD Servers
-    for root in root_servers:
-        for tld in tld_servers:
-            topology.add_edge(root, tld, type="dns_link", delay=1)
+#     Returns:
+#         fnss.Topology: The generated topology.
+#     """
+#     topology = nx.DiGraph()
 
-    # Connections: TLD Servers → Name Servers
-    for tld in tld_servers:
-        for name_server in name_servers:
-            topology.add_edge(tld, name_server, type="dns_link", delay=2)
+#     # Number of entities
+#     num_sources = 1000
+#     num_receivers = 50
+#     num_routers = 10  # Length of the "pipe"
 
-    # Connections: Name Servers → First Router in Pipe
-    first_router = routers[0]
-    for name_server in name_servers:
-        topology.add_edge(name_server, first_router, type="dns_link", delay=2)
+#     # Sources
+#     sources = ["source_{}".format(i) for i in range(num_sources)]
+#     topology.add_nodes_from(sources)
 
-    # Connections: Linear chain of routers (Pipe)
-    for i in range(num_routers - 1):
-        topology.add_edge(routers[i], routers[i + 1], type="dns_link", delay=1)
+#     # Routers
+#     routers = ["router_{}".format(i) for i in range(num_routers)]
+#     topology.add_nodes_from(routers)
 
-    # Connections: Last Router → Receivers
-    last_router = routers[-1]
-    for receiver in receivers:
-        topology.add_edge(last_router, receiver, type="dns_link", delay=2)
+#     # Receivers
+#     receivers = ["receiver_{}".format(i) for i in range(num_receivers)]
+#     topology.add_nodes_from(receivers)
 
-    # Add stacks for all nodes
-    for root in root_servers:
-        fnss.add_stack(topology, root, "root_server")
-    for tld in tld_servers:
-        fnss.add_stack(topology, tld, "tld_server")
-    for name_server in name_servers:
-        fnss.add_stack(topology, name_server, "name_server", contents=[int(name_server.split("_")[2])])
-    for router in routers:
-        fnss.add_stack(topology, router, "router", cache_size=0)  # No caching in DNS hierarchy routers
-    for receiver in receivers:
-        fnss.add_stack(topology, receiver, "receiver")
+#     # Connections: Sources to the first router in the pipe
+#     first_router = routers[0]
+#     for source in sources:
+#         topology.add_edge(source, first_router, type="ndn_link", delay=2)
 
-    return topology
+#     # Connections: Linear chain of routers
+#     for i in range(num_routers - 1):
+#         topology.add_edge(routers[i], routers[i + 1], type="ndn_link", delay=1)
 
+#     # Connections: Last router to receivers
+#     last_router = routers[-1]
+#     for receiver in receivers:
+#         topology.add_edge(last_router, receiver, type="ndn_link", delay=2)
+
+#     # Enable caching in routers
+#     for router in routers:
+#         fnss.add_stack(topology, router, "router", cache_size=100)  # Example: Cache size = 100 entries
+
+#     # Add stacks for sources and receivers
+#     for source in sources:
+#         fnss.add_stack(topology, source, "source", contents=[int(source.split("_")[1])])  # Each source has one content
+
+#     for receiver in receivers:
+#         fnss.add_stack(topology, receiver, "receiver")
+
+#     return topology
 @register_topology_factory("DNSR_LINEAR")
 def topology_dnsr_linear(**kwargs):
+    """Return a DNSR Linear topology
+
+    Parameters
+    ----------
+    seed : int, optional
+        The seed used for random number generation
+
+    Returns
+    -------
+    topology : fnss.Topology
+        The topology object
     """
-    Creates a linear-chain topology for the NDN-inspired DNS Renaissance protocol.
+    # Create a linear topology
+    topology = fnss.line_topology(10).to_undirected()
+    # Set source and receiver nodes
+    sources = [0]  # Starting node as source
+    receivers = [9]  # Ending node as receiver
+    routers = [n for n in topology.nodes() if n not in sources + receivers]
 
-    Structure:
-    - Sources (Name Servers): 1000 nodes, one for each domain.
-    - Pipe (Routers): A linear chain of routers.
-    - Receivers: Client nodes at the end of the pipe.
+    # Add stacks to nodes
+    for v in sources:
+        fnss.add_stack(topology, v, "source")
+    for v in receivers:
+        fnss.add_stack(topology, v, "receiver")
+    for v in routers:
+        fnss.add_stack(topology, v, "router")
 
-    Returns:
-        fnss.Topology: The generated topology.
-    """
-    topology = nx.DiGraph()
+    # Set weights and delays on all links
+    fnss.set_weights_constant(topology, 1.0)
+    fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+    # set the icr_candidates
+    topology.graph["icr_candidates"] = set(routers)
 
-    # Number of entities
-    num_sources = 1000
-    num_receivers = 50
-    num_routers = 10  # Length of the "pipe"
+    # Label links as internal or external
+    for u, v in topology.edges():
+        if u in sources or v in sources:
+            topology.adj[u][v]["type"] = "external"
+            fnss.set_weights_constant(topology, 1000.0, [(u, v)])
+            fnss.set_delays_constant(topology, EXTERNAL_LINK_DELAY, "ms", [(u, v)])
+        else:
+            topology.adj[u][v]["type"] = "internal"
 
-    # Sources
-    sources = ["source_{}".format(i) for i in range(num_sources)]
-    topology.add_nodes_from(sources)
-
-    # Routers
-    routers = ["router_{}".format(i) for i in range(num_routers)]
-    topology.add_nodes_from(routers)
-
-    # Receivers
-    receivers = ["receiver_{}".format(i) for i in range(num_receivers)]
-    topology.add_nodes_from(receivers)
-
-    # Connections: Sources to the first router in the pipe
-    first_router = routers[0]
-    for source in sources:
-        topology.add_edge(source, first_router, type="ndn_link", delay=2)
-
-    # Connections: Linear chain of routers
-    for i in range(num_routers - 1):
-        topology.add_edge(routers[i], routers[i + 1], type="ndn_link", delay=1)
-
-    # Connections: Last router to receivers
-    last_router = routers[-1]
-    for receiver in receivers:
-        topology.add_edge(last_router, receiver, type="ndn_link", delay=2)
-
-    # Enable caching in routers
-    for router in routers:
-        fnss.add_stack(topology, router, "router", cache_size=100)  # Example: Cache size = 100 entries
-
-    # Add stacks for sources and receivers
-    for source in sources:
-        fnss.add_stack(topology, source, "source", contents=[int(source.split("_")[1])])  # Each source has one content
-
-    for receiver in receivers:
-        fnss.add_stack(topology, receiver, "receiver")
-
-    return topology
+    return IcnTopology(topology)
