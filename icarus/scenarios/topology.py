@@ -970,9 +970,9 @@ def topology_dns_hierarchy_linear(**kwargs):
     topology = fnss.line_topology(10).to_undirected()
 
     # Define the levels for the hierarchical DNS structure
-    root_servers = [510, 511]  # Top level - Root Servers
-    tld_servers = [512 + i for i in range(10)]   # Mid level - TLD Servers
-    name_servers = [522 + i for i in range(1000)]  # Bottom level - Name Servers
+    root_servers = [510, 511] 
+    tld_servers = [512 + i for i in range(10)]
+    name_servers = [522 + i for i in range(1000)]
 
     for i in name_servers:
         topology.add_node(i)
@@ -986,28 +986,19 @@ def topology_dns_hierarchy_linear(**kwargs):
     # Define receivers (500 connected to last router)
     receivers = []
     for i in range(500):
-        receiver_id = i+10   # Unique IDs for receivers
-        topology.add_node(receiver_id)  # Explicitly add the receiver node
-        topology.add_edge(9, receiver_id)  # Connect to the last router
+        receiver_id = i+10   
+        topology.add_node(receiver_id)
+        topology.add_edge(9, receiver_id)
         receivers.append(receiver_id)
 
     # Add Name Servers connected to TLD Servers
     for i in name_servers:
         tld_id = tld_servers[i % len(tld_servers)]
-        # topology.add_node(i)
         topology.add_edge(tld_id, i)
-
-    # for i in range(10):
-    #     tld_id = tld_servers[i % len(tld_servers)]
-    #     for j in range(100):
-    #         name_server_id = 100
-    #         topology.add_node(name_server_id)  # Explicitly add the name server node
-    #         topology.add_edge(tld_id, name_server_id)
-
+        
     # Add TLD Servers connected to Root Servers
     for i in tld_servers:
         root_id = root_servers[i % len(root_servers)]
-        # topology.add_node(i)
         topology.add_edge(root_id, i)
     
     topology.add_edge(0, root_servers[0])
@@ -1031,6 +1022,7 @@ def topology_dns_hierarchy_linear(**kwargs):
     # Set weights and delays on all links
     fnss.set_weights_constant(topology, 1.0)
     fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+
     # Set the ICR candidates
     topology.graph["icr_candidates"] = set(routers)
 
@@ -1067,19 +1059,17 @@ def topology_dnsr_linear(**kwargs):
     # Add 500 receivers connected to one end of the pipe
     receivers = []
     for i in range(500):
-        receiver_id = i + 1010  # Unique IDs for receivers
-        topology.add_edge(9, receiver_id)  # Connect to the last router
+        receiver_id = i + 1010
+        topology.add_edge(9, receiver_id)
         receivers.append(receiver_id)
 
     # Add 1000 sources connected to the other end of the pipe
     sources = []
     for i in range(1000):
-        source_id = i + 10  # Unique IDs for sources
-        topology.add_edge(0, source_id)  # Connect to the first router
+        source_id = i + 10
+        topology.add_edge(0, source_id)
         sources.append(source_id)
 
-    # Identify routers as the intermediate nodes in the pipe
-    # routers = [n for n in topology.nodes() if n not in sources + receivers]
     routers = [i for i in range(10)]
     # Add stacks to nodes
     for v in sources:
