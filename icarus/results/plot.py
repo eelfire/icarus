@@ -197,6 +197,9 @@ def plot_lines(resultset, desc, filename, plotdir):
     plot_empty = desc.get("plotempty", True)
     empty = True
     for i in range(len(yvals)):
+        print("[DEBUG] Processing yvals[{}] = {}".format(i, yvals[i]))
+        print("[DEBUG] Processing ymetrics[{}] = {}".format(i, ymetrics[i])) 
+
         means = np.zeros(len(xvals))
         err = np.zeros(len(xvals))
         for j in range(len(xvals)):
@@ -209,6 +212,7 @@ def plot_lines(resultset, desc, filename, plotdir):
                 for _, v in resultset.filter(condition)
                 if v.getval(ymetrics[i]) is not None
             ]
+            print("[DEBUG] Processing data[{}] = {}".format(j, data))
             confidence = desc["confidence"] if "confidence" in desc else 0.95
             means[j], err[j] = means_confidence_interval(data, confidence)
         yerr = (
