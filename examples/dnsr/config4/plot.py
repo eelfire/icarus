@@ -38,8 +38,13 @@ PLOT_EMPTY_GRAPHS = True
 
 # This dict maps strategy names to the style of the line to be used in the plots
 STRATEGY_STYLE = {
-    "LCE": "b--p",
-    "NO_CACHE": "k:o",
+    "LCE": "b-o",
+    "LCD": "g-D",
+    "PROB_CACHE": "m-^",
+    "NO_CACHE": "c-s",
+    "EDGE":"r-v",
+    "CL4M":"b--p",
+    "RAND_BERNOULLI":"g-->",
 }
 
 # This dict maps name of strategies to names to be displayed in the legend
@@ -56,12 +61,22 @@ STRATEGY_LEGEND = {
 # Color and hatch styles for bar charts of cache hit ratio and link load vs topology
 STRATEGY_BAR_COLOR = {
     "LCE": "k",
-    "NO_CACHE": "0.5",
+    "LCD": "0.4",
+    "PROB_CACHE": "0.5",
+    "NO_CACHE": "0.6",
+    "EDGE":"0.7",
+    "CL4M":"0.8",
+    "RAND_BERNOULLI":"0.9",
 }
 
 STRATEGY_BAR_HATCH = {
     "LCE": None,
-    "NO_CACHE": "x",
+    "LCD": "//",
+    "PROB_CACHE": "x",
+    "NO_CACHE": "+",
+    "EDGE":"\\",
+    "CL4M":"O",
+    "RAND_BERNOULLI":"|",
 }
 
 
@@ -76,7 +91,7 @@ def plot_latency_vs_alpha(resultset, cache_size, alpha_range, strategies, plotdi
     desc["xparam"] = ("workload", "alpha")
     desc["xvals"] = alpha_range
     desc["filter"] = {"cache_placement": {"network_cache": cache_size}}
-    desc["ymetrics"] = [("LATENCY", "MEAN")] * len(strategies)
+    desc["ymetrics"] = [("DNS_LATENCY", "MEAN")] * len(strategies)
     desc["ycondnames"] = [("strategy", "name")] * len(strategies)
     desc["ycondvals"] = strategies
     desc["errorbar"] = True
@@ -142,7 +157,7 @@ def plot_hops_vs_alpha(
     desc["filter"] = {
         "cache_placement": {"network_cache": cache_size},
     }
-    desc["ymetrics"] = [("HOPS", "MEAN_HOPS")] * len(strategies)
+    desc["ymetrics"] = [("DNS_HOPS", "MEAN_HOPS")] * len(strategies)
     desc["ycondnames"] = [("strategy", "name")] * len(strategies)
     desc["ycondvals"] = strategies
     desc["errorbar"] = True

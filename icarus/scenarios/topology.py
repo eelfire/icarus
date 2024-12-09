@@ -1199,9 +1199,9 @@ def topology_geant_dns(**kwargs):
     root_servers = sources[:1]
     tld_servers = sources[1:2]
     name_servers = sources[2:]
-    print("[DEBUG] root_servers:", root_servers)
-    print("[DEBUG] tld_servers:", tld_servers)
-    print("[DEBUG] name_servers:", name_servers)
+    # print("[DEBUG] root_servers:", root_servers)
+    # print("[DEBUG] tld_servers:", tld_servers)
+    # print("[DEBUG] name_servers:", name_servers)
     
     # print("[DEBUG] Sizes:", len(root_servers), len(tld_servers), len(name_servers))
 

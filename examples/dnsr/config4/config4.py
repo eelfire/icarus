@@ -34,7 +34,7 @@ N_REPLICATIONS = 3
 
 # List of metrics to be measured in the experiments
 # The implementation of data collectors are located in ./icarus/execution/collectors.py
-DATA_COLLECTORS = ["LATENCY", "CACHE_HIT_RATIO", "HOPS"]
+DATA_COLLECTORS = ["DNS_LATENCY", "CACHE_HIT_RATIO", "DNS_HOPS"]
 
 # Range of alpha values of the Zipf distribution using to generate content requests
 # alpha values must be positive. The greater the value the more skewed is the
