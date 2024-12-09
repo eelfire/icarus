@@ -846,27 +846,27 @@ def topology_rocketfuel_latency(
     return IcnTopology(topology)
 
 
-@register_topology_factory("DNS")
-def topology_dns(n, delay=1, **kwargs):
-    # currently this is same as PATH
-    topology = fnss.line_topology(n)
-    receivers = [0]
-    routers = range(1, n - 1)
-    sources = [n - 1]
-    topology.graph["icr_candidates"] = set(routers)
-    for v in sources:
-        fnss.add_stack(topology, v, "source")
-    for v in receivers:
-        fnss.add_stack(topology, v, "receiver")
-    for v in routers:
-        fnss.add_stack(topology, v, "router")
-    # set weights and delays on all links
-    fnss.set_weights_constant(topology, 1.0)
-    fnss.set_delays_constant(topology, delay, "ms")
-    # label links as internal or external
-    for u, v in topology.edges():
-        topology.adj[u][v]["type"] = "internal"
-    return IcnTopology(topology)
+# @register_topology_factory("DNS")
+# def topology_dns(n, delay=1, **kwargs):
+#     # currently this is same as PATH
+#     topology = fnss.line_topology(n)
+#     receivers = [0]
+#     routers = range(1, n - 1)
+#     sources = [n - 1]
+#     topology.graph["icr_candidates"] = set(routers)
+#     for v in sources:
+#         fnss.add_stack(topology, v, "source")
+#     for v in receivers:
+#         fnss.add_stack(topology, v, "receiver")
+#     for v in routers:
+#         fnss.add_stack(topology, v, "router")
+#     # set weights and delays on all links
+#     fnss.set_weights_constant(topology, 1.0)
+#     fnss.set_delays_constant(topology, delay, "ms")
+#     # label links as internal or external
+#     for u, v in topology.edges():
+#         topology.adj[u][v]["type"] = "internal"
+#     return IcnTopology(topology)
 
 
 @register_topology_factory("DNS_HIERARCHY")
@@ -953,6 +953,89 @@ def dns_hierarchy(rs, tld, auth, resolvers, clients, routers, **kwargs):
     return IcnTopology(topology)
 
 @register_topology_factory("DNS_HIERARCHY_LINEAR")
+# def topology_dns_hierarchy_linear(**kwargs):
+#     """Return a DNS Hierarchy Linear topology with a tree structure on the source side.
+
+#     Parameters
+#     ----------
+#     seed : int, optional
+#         The seed used for random number generation
+
+#     Returns
+#     -------
+#     topology : fnss.Topology
+#         The topology object
+#     """
+#     # Create a linear pipe of 10 routers
+#     topology = fnss.line_topology(10).to_undirected()
+
+#     # Define the levels for the hierarchical DNS structure
+#     root_servers = [510, 511] 
+#     tld_servers = [512 + i for i in range(10)]
+#     name_servers = [522 + i for i in range(1000)]
+
+#     for i in name_servers:
+#         topology.add_node(i)
+    
+#     for i in tld_servers:
+#         topology.add_node(i)
+
+#     for i in root_servers:
+#         topology.add_node(i)
+
+#     # Define receivers (500 connected to last router)
+#     receivers = []
+#     for i in range(500):
+#         receiver_id = i+10   
+#         topology.add_node(receiver_id)
+#         topology.add_edge(9, receiver_id)
+#         receivers.append(receiver_id)
+
+#     # Add Name Servers connected to TLD Servers
+#     for i in name_servers:
+#         tld_id = tld_servers[i % len(tld_servers)]
+#         topology.add_edge(tld_id, i)
+        
+#     # Add TLD Servers connected to Root Servers
+#     for i in tld_servers:
+#         root_id = root_servers[i % len(root_servers)]
+#         topology.add_edge(root_id, i)
+    
+#     topology.add_edge(0, root_servers[0])
+#     topology.add_edge(0, root_servers[1])
+
+#     # Define routers as the intermediate nodes in the pipe
+#     routers = [i for i in range(10)]
+
+#     # Add stacks to nodes
+#     for v in name_servers:
+#         fnss.add_stack(topology, v, "source", contents={"files": []})
+#     for v in receivers:
+#         fnss.add_stack(topology, v, "receiver", contents={"files": []})
+#     for v in root_servers:
+#         fnss.add_stack(topology, v, "root_server", contents={"cache_size": 0})
+#     for v in tld_servers:
+#         fnss.add_stack(topology, v, "tld_server", contents={"cache_size": 0})
+#     for v in routers:
+#         fnss.add_stack(topology, v, "router", contents={"cache_size": 10})
+
+#     # Set weights and delays on all links
+#     fnss.set_weights_constant(topology, 1.0)
+#     fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+
+#     # Set the ICR candidates
+#     topology.graph["icr_candidates"] = set(routers)
+
+#     # Label links as internal or external
+#     for u, v in topology.edges():
+#         if u in name_servers or v in name_servers:
+#             topology.adj[u][v]["type"] = "external"
+#             fnss.set_weights_constant(topology, 1000.0, [(u, v)])
+#             fnss.set_delays_constant(topology, EXTERNAL_LINK_DELAY, "ms", [(u, v)])
+#         else:
+#             topology.adj[u][v]["type"] = "internal"
+
+#     return IcnTopology(topology)
 def topology_dns_hierarchy_linear(**kwargs):
     """Return a DNS Hierarchy Linear topology with a tree structure on the source side.
 
@@ -991,15 +1074,13 @@ def topology_dns_hierarchy_linear(**kwargs):
         topology.add_edge(9, receiver_id)
         receivers.append(receiver_id)
 
-    # Add Name Servers connected to TLD Servers
+    # Add Name Servers connected to last router
     for i in name_servers:
-        tld_id = tld_servers[i % len(tld_servers)]
-        topology.add_edge(tld_id, i)
+        topology.add_edge(0, i)
         
-    # Add TLD Servers connected to Root Servers
+    # Add TLD Servers connected to last router
     for i in tld_servers:
-        root_id = root_servers[i % len(root_servers)]
-        topology.add_edge(root_id, i)
+        topology.add_edge(0, i)
     
     topology.add_edge(0, root_servers[0])
     topology.add_edge(0, root_servers[1])
@@ -1078,6 +1159,171 @@ def topology_dnsr_linear(**kwargs):
         fnss.add_stack(topology, v, "receiver", contents={"files": []})
     for v in routers:
         fnss.add_stack(topology, v, "router", contents={"cache_size": 10})
+
+    # Set weights and delays on all links
+    fnss.set_weights_constant(topology, 1.0)
+    fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+
+    # Set the ICR candidates
+    topology.graph["icr_candidates"] = set(routers)
+
+    # Label links as internal or external
+    for u, v in topology.edges():
+        if u in sources or v in sources:
+            topology.adj[u][v]["type"] = "external"
+            fnss.set_weights_constant(topology, 1000.0, [(u, v)])
+            fnss.set_delays_constant(topology, EXTERNAL_LINK_DELAY, "ms", [(u, v)])
+        else:
+            topology.adj[u][v]["type"] = "internal"
+
+    return IcnTopology(topology)
+
+@register_topology_factory("GEANT_DNS")
+def topology_geant_dns(**kwargs):
+    # 240 nodes in the main component
+    topology = fnss.parse_topology_zoo(
+        path.join(TOPOLOGY_RESOURCES_DIR, "Geant2012.graphml")
+    ).to_undirected()
+    topology = largest_connected_component_subgraph(topology)
+    deg = nx.degree(topology)
+    receivers = [v for v in topology.nodes() if deg[v] == 1]  # 8 nodes
+    icr_candidates = [v for v in topology.nodes() if deg[v] > 2]  # 19 nodes
+    # attach sources to topology
+    source_attachments = [v for v in topology.nodes() if deg[v] == 2]  # 13 nodes
+    sources = []
+    for v in source_attachments:
+        u = v + 1000  # node ID of source
+        topology.add_edge(v, u)
+        sources.append(u)
+    # print("[DEBUG] Sizes:", len(receivers), len(icr_candidates), len(sources))
+    root_servers = sources[:1]
+    tld_servers = sources[1:2]
+    name_servers = sources[2:]
+    print("[DEBUG] root_servers:", root_servers)
+    print("[DEBUG] tld_servers:", tld_servers)
+    print("[DEBUG] name_servers:", name_servers)
+    
+    # print("[DEBUG] Sizes:", len(root_servers), len(tld_servers), len(name_servers))
+
+    routers = [v for v in topology.nodes() if v not in sources + receivers]
+    # add stacks to nodes
+    topology.graph["icr_candidates"] = set(icr_candidates)
+
+    for i in range(len(root_servers)):
+        fnss.add_stack(topology, root_servers[i], "source", contents = ["tld_records"])
+    for i in range(len(tld_servers)):
+        fnss.add_stack(topology, tld_servers[i], "source", contents = ["ns_records"])
+    for i in range(len(name_servers)):
+        fnss.add_stack(topology, name_servers[i], "source", contents=[f"domain_{i+1}"])
+    for v in receivers:
+        fnss.add_stack(topology, v, "receiver")
+    for v in routers:
+        fnss.add_stack(topology, v, "router", cache_size=10000)
+
+    # for v in sources:
+    #     fnss.add_stack(topology, v, "source")
+    # for v in receivers:
+    #     fnss.add_stack(topology, v, "receiver")
+    # for v in routers:
+    #     fnss.add_stack(topology, v, "router")
+    # set weights and delays on all links
+    fnss.set_weights_constant(topology, 1.0)
+    fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+    # label links as internal or external
+    for u, v in topology.edges():
+        if u in sources or v in sources:
+            topology.adj[u][v]["type"] = "external"
+            # this prevents sources to be used to route traffic
+            fnss.set_weights_constant(topology, 1000.0, [(u, v)])
+            fnss.set_delays_constant(topology, EXTERNAL_LINK_DELAY, "ms", [(u, v)])
+        else:
+            topology.adj[u][v]["type"] = "internal"
+    return IcnTopology(topology)
+
+    # topology = fnss.parse_topology_zoo(
+    #     path.join(TOPOLOGY_RESOURCES_DIR, "Geant2012.graphml")
+    # ).to_undirected()
+    # topology = largest_connected_component_subgraph(topology)
+    
+    # # Classify nodes
+    # deg = nx.degree(topology)
+    # receivers = [v for v in topology.nodes() if deg[v] == 1]
+    # sources = [v for v in topology.nodes() if deg[v] == 2]
+    # routers = [v for v in topology.nodes() if v not in sources + receivers]
+
+    # # Designate root, TLD, and Name Servers
+    # root_servers = sources[:2]
+    # tld_servers = sources[2:12]
+    # name_servers = sources[12:]@register_topology_factory("GEANT_DNS")
+    # print("[DEBUG] Sizes:", len(root_servers), len(tld_servers), len(name_servers))
+    # # Assign stacks to nodes
+    # for v in root_servers:
+    #     fnss.add_stack(topology, v, "root_server")
+    # for v in tld_servers:
+    #     fnss.add_stack(topology, v, "tld_server")
+    # for v in name_servers:
+    #     fnss.add_stack(topology, v, "source")
+    # for v gy contains bundled links, i.e. multiple links between the same pair or nodes, the topology is parsed correctly but each bundle of links is reprein receivers:
+    #     fnss.add_stack(topology, v, "receiver")
+    # for v in routers:
+    #     fnss.add_stack(topology, v, "router")
+
+    # # Set weights and delays
+    # fnss.set_weights_constant(topology, 1.0)
+    # fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+
+    # # Label links as internal or external
+    # for u, v in topology.edges():
+    #     if u in sources or v in sources:
+    #         topology.adj[u][v]["type"] = "external"
+    #         fnss.set_weights_constant(topology, 1000.0, [(u, v)])
+    #         fnss.set_delays_constant(topology, EXTERNAL_LINK_DELAY, "ms", [(u, v)])
+    #     else:
+    #         topology.adj[u][v]["type"] = "internal"
+
+    # return IcnTopology(topology)
+
+@register_topology_factory("DNS")
+def topology_dns(**kwargs):
+    # Create a linear pipe of 10 routers
+    topology = fnss.line_topology(10).to_undirected()
+    # Add 500 receivers connected to one end of the pipe
+    receivers = []
+    for i in range(500):
+        receiver_id = i + 1010
+        topology.add_edge(9, receiver_id)
+        receivers.append(receiver_id)
+
+    # Add 1000 sources connected to the other end of the pipe
+    sources = []
+    for i in range(1000):
+        source_id = i + 10
+        topology.add_edge(0, source_id)
+        sources.append(source_id)
+
+    # Add one root server
+    root_servers = [1010 + 500,]
+    for root_server in root_servers:
+        topology.add_edge(0, root_server)
+
+    # Add one TLD server
+    tld_servers = [1010 + 501,]
+    for tld_server in tld_servers:
+        topology.add_edge(0, tld_server)
+
+    routers = [i for i in range(10)]
+
+    # Add stacks to nodes
+    for i in range(len(sources)):
+        fnss.add_stack(topology, sources[i], "source", contents=[f"domain_{i+1}"])
+    for v in root_servers:
+        fnss.add_stack(topology, v, "source", contents=["tld_records"])
+    for v in tld_servers:
+        fnss.add_stack(topology, v, "source", contents=["ns_records"])
+    for v in receivers:
+        fnss.add_stack(topology, v, "receiver")
+    for v in routers:
+        fnss.add_stack(topology, v, "router", cache_size=10000)
 
     # Set weights and delays on all links
     fnss.set_weights_constant(topology, 1.0)

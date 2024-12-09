@@ -400,10 +400,232 @@ class YCSBWorkload:
         return
 
 
-@register_workload("DNS_QUERIES_RESPONSES")
-class DNSWorkload:
-    def __init__(self):
-        pass
+# @register_workload("DNS_HIERARCHIAL")
+# class DNS_HIERARCHIALWorkload:
+#     def __init__(
+#         self,
+#         topology,
+#         n_contents,
+#         alpha,
+#         beta=0,
+#         rate=1.0,
+#         n_warmup=10 ** 5,
+#         n_measured=4 * 10 ** 5,
+#         seed=None,
+#         **kwargs
+#     ):
+#         if alpha < 0:
+#             raise ValueError("alpha must be positive")
+#         if beta < 0:
+#             raise ValueError("beta must be positive")
+#         self.receivers = [
+#             v for v in topology.nodes() if topology.node[v]["stack"][0] == "receiver"
+#         ]
+#         self.tlds = [
+#             v for v in topology.nodes() if topology.node[v]["stack"][0] == "tld"
+#         ]
+#         self.root = [
+#             v for v in topology.nodes() if topology.node[v]["stack"][0] == "root"
+#         ]
+#         self.nameservers = [
+#             v for v in topology.nodes() if topology.node[v]["stack"][0] == "nameserver"
+#         ]
+#         self.ns_zipf = TruncatedZipfDist(alpha, n_contents)
+#         self.tld_zipf = TruncatedZipfDist(alpha, 10)
+#         self.root_zipf = TruncatedZipfDist(alpha, 2)
+#         self.n_contents = n_contents
+#         self.contents = range(1, n_contents + 1)
+#         self.alpha = alpha
+#         self.rate = rate
+#         self.n_warmup = n_warmup
+#         self.n_measured = n_measured
+#         random.seed(seed)
+#         self.beta = beta
+#         if beta != 0:
+#             degree = nx.degree(self.topology)
+#             self.receivers = sorted(
+#                 self.receivers,
+#                 key=lambda x: degree[iter(topology.adj[x]).next()],
+#                 reverse=True,
+#             )
+#             self.tlds = sorted(
+#                 self.tlds,
+#                 key=lambda x: degree[iter(topology.adj[x]).next()],
+#                 reverse=True,
+#             )
+#             self.root = sorted(
+#                 self.root,
+#                 key=lambda x: degree[iter(topology.adj[x]).next()],
+#                 reverse=True,
+#             )
+#             self.nameservers = sorted(
+#                 self.nameservers,
+#                 key=lambda x: degree[iter(topology.adj[x]).next()],
+#                 reverse=True,
+#             )
+#             self.receiver_dist = TruncatedZipfDist(beta, len(self.receivers))
+#             # self.tld_dist = TruncatedZipfDist(beta, len(self.tlds))
+#             # self.root_dist = TruncatedZipfDist(beta, len(self.root))
+#             # self.nameserver_dist = TruncatedZipfDist(beta, len(self.nameservers))
+
+#     def __iter__(self):
+#         req_counter = 0
+#         t_event = 0.0
+#         while req_counter < self.n_warmup + self.n_measured:
+#             t_event += random.expovariate(self.rate)
+#             if self.beta == 0:
+#                 receiver = random.choice(self.receivers)
+#                 # tld = random.choice(self.tlds)
+#                 # root = random.choice(self.root)
+#                 # nameserver = random.choice(self.nameservers)
+#             else:
+#                 receiver = self.receivers[self.receiver_dist.rv() - 1]
+
+#             root_content = int(self.root_zipf.rv())
+#             # log = req_counter >= self.n_warmup
+#             # event = {"receiver": receiver, "content": root_content, "log": log}
+#             # yield (t_event, event)
+#             # req_counter += 1
+
+#             # receiver asks for a tld from root
+#             tld_content = int(self.tld_zipf.rv())
+#             log = req_counter >= self.n_warmup
+#             event = {"receiver": receiver, "content": tld_content, "log": log}
+#             yield (t_event, event)
+#             req_counter += 1
+
+#             # reciver asks for nameserver from tld
+#             nameserver_content = int(self.ns_zipf.rv())
+#             log = req_counter >= self.n_warmup
+#             event = {"receiver": receiver, "content": nameserver_content, "log": log}
+#             yield (t_event, event)
+#             req_counter += 1
+
+#             # reciever asks for content from nameserver
+#             content = int(self.zipf.rv())
+#             log = req_counter >= self.n_warmup
+#             event = {"receiver": receiver, "content": content, "log": log}
+#             yield (t_event, event)
+#             req_counter += 1
+
+#         return
+
+@register_workload("DNS_NDN")
+class DNS_NDNWorkload:
+    def __init__(
+        self,
+        topology,
+        n_contents,
+        alpha,
+        beta=0,
+        rate=1.0,
+        n_warmup=10 ** 5,
+        n_measured=4 * 10 ** 5,
+        seed=None,
+        **kwargs
+    ):
+        if alpha < 0:
+            raise ValueError("alpha must be positive")
+        if beta < 0:
+            raise ValueError("beta must be positive")
+        self.receivers = [
+            v for v in topology.nodes() if topology.node[v]["stack"][0] == "receiver"
+        ]
+        self.zipf = TruncatedZipfDist(alpha, n_contents)
+        self.n_contents = n_contents
+        self.contents = []
+        self.alpha = alpha
+        self.rate = rate
+        self.n_warmup = n_warmup
+        self.n_measured = n_measured
+        random.seed(seed)
+        self.beta = beta
+        if beta != 0:
+            degree = nx.degree(self.topology)
+            self.receivers = sorted(
+                self.receivers,
+                key=lambda x: degree[iter(topology.adj[x]).next()],
+                reverse=True,
+            )
+            self.receiver_dist = TruncatedZipfDist(beta, len(self.receivers))
 
     def __iter__(self):
-        pass
+        req_counter = 0
+        t_event = 0.0
+        while req_counter < self.n_warmup + self.n_measured:
+            t_event += random.expovariate(self.rate)
+            if self.beta == 0:
+                receiver = random.choice(self.receivers)
+            else:
+                receiver = self.receivers[self.receiver_dist.rv() - 1]
+            content = int(self.zipf.rv())
+            log = req_counter >= self.n_warmup
+            event = {"receiver": receiver, "content": f"domain_{content}", "log": log}
+            yield (t_event, event)
+            req_counter += 1
+        return
+
+@register_workload("DNS_HIERARCHIAL")
+class DNS_HIERARCHIALWorkload:
+    def __init__(
+        self,
+        topology,
+        n_contents,
+        alpha,
+        beta=0,
+        rate=1.0,
+        n_warmup=10 ** 5,
+        n_measured=4 * 10 ** 5,
+        seed=None,
+        **kwargs
+    ):
+        if alpha < 0:
+            raise ValueError("alpha must be positive")
+        if beta < 0:
+            raise ValueError("beta must be positive")
+        self.receivers = [
+            v for v in topology.nodes() if topology.node[v]["stack"][0] == "receiver"
+        ]
+        self.zipf = TruncatedZipfDist(alpha, n_contents)
+        self.n_contents = n_contents
+        self.contents = []
+        self.alpha = alpha
+        self.rate = rate
+        self.n_warmup = n_warmup
+        self.n_measured = n_measured
+        random.seed(seed)
+        self.beta = beta
+        if beta != 0:
+            degree = nx.degree(self.topology)
+            self.receivers = sorted(
+                self.receivers,
+                key=lambda x: degree[iter(topology.adj[x]).next()],
+                reverse=True,
+            )
+            self.receiver_dist = TruncatedZipfDist(beta, len(self.receivers))
+
+    def __iter__(self):
+        req_counter = 0
+        t_event = 0.0
+        while req_counter < 3*self.n_measured:
+            t_event += random.expovariate(self.rate)
+            if self.beta == 0:
+                receiver = random.choice(self.receivers)
+            else:
+                receiver = self.receivers[self.receiver_dist.rv() - 1]
+            content = int(self.zipf.rv())
+            log = req_counter
+            event = {"receiver": receiver, "content": "tld_records", "log": log}
+            yield (t_event, event)
+            req_counter += 1
+            t_event += random.expovariate(self.rate)
+            log = req_counter
+            event = {"receiver": receiver, "content": "ns_records", "log": log}
+            yield (t_event, event)
+            req_counter += 1
+            t_event += random.expovariate(self.rate)
+            log = req_counter
+            event = {"receiver": receiver, "content": f"domain_{content}", "log": log}
+            yield (t_event, event)
+            req_counter += 1
+        return

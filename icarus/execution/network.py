@@ -120,13 +120,13 @@ class NetworkView:
             Origin node
         t : any hashable type
             Destination node
-
         Returns
         -------
         shortest_path : list
             List of nodes of the shortest path (origin and destination
             included)
         """
+        # print("[DEBUG] self.model.shortest_path: ", s, t, "\n")
         return self.model.shortest_path[s][t]
 
     def all_pairs_shortest_paths(self):
@@ -380,13 +380,28 @@ class NetworkModel:
         for node in topology.nodes():
             stack_name, stack_props = fnss.get_stack(topology, node)
             if stack_name == "router":
+                # print("[DEBUG] stack_props: ", stack_props, "\n")
                 if "cache_size" in stack_props:
                     cache_size[node] = stack_props["cache_size"]
             elif stack_name == "source":
+                # print("[DEBUG] stack_props: ", stack_props, "\n")
                 contents = stack_props["contents"]
                 self.source_node[node] = contents
                 for content in contents:
                     self.content_source[content] = node
+            # elif stack_name == "root_server":
+            #     contents = stack_props["contents"]
+            #     self.source_node[node] = contents
+            #     for content in contents:
+            #         self.content_source[content] = node
+            # elif stack_name == "tld_server":
+            #     contents = stack_props["contents"]
+            #     self.source_node[node] = contents
+            #     for content in contents:
+            #         self.content_source[content] = node
+        # print("[DEBUG] content_source: ", self.content_source, "\n")
+        # print("[DEBUG] source_node: ", self.source_node, "\n")   
+        # print("[DEBUG] cache_size: ", cache_size, "\n")
         if any(c < 1 for c in cache_size.values()):
             logger.warn(
                 "Some content caches have size equal to 0. "
