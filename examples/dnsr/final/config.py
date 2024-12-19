@@ -51,7 +51,7 @@ DATA_COLLECTORS = ["DNS_LATENCY", "CACHE_HIT_RATIO", "DNS_HOPS"]
 ALPHA = [0.25, 0.5, 1.0, 2.0]
 
 # Total size of network cache as a fraction of content population
-NETWORK_CACHE = [0.001, 0.005, 0.01, 0.05, 0.1]
+NETWORK_CACHE = [0.005, 0.01, 0.05, 0.1]
 
 # Number of content objects
 N_CONTENTS = 11
@@ -61,14 +61,15 @@ NETWORK_REQUEST_RATE = 6.0
 
 # Number of content requests generated to prepopulate the caches
 # These requests are not logged
-N_WARMUP_REQUESTS = 15
+N_WARMUP_REQUESTS = 11
 
 # Number of content requests generated after the warmup and logged
 # to generate results.
-N_MEASURED_REQUESTS = 30
+N_MEASURED_REQUESTS = 500
 
 TOPOLOGIES = [
     "GEANT_DNS",
+    "DNS"
 ]
 
 # List of caching and routing strategies

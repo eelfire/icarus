@@ -1342,3 +1342,58 @@ def topology_dns(**kwargs):
             topology.adj[u][v]["type"] = "internal"
 
     return IcnTopology(topology)
+
+@register_topology_factory("GARR_DNS")
+def topology_garr_dns(**kwargs):
+    # Load the GARR topology
+    topology = fnss.parse_topology_zoo(
+        path.join(TOPOLOGY_RESOURCES_DIR, "Garr201201.graphml")
+    ).to_undirected()
+
+    # Original sources are nodes representing neighbouring AS's
+    original_sources = [0, 2, 3, 5, 13, 16, 23, 24, 25, 27, 51, 52, 54]
+
+    # Receivers are internal nodes with degree = 1
+    receivers = [
+        1, 7, 8, 9, 11, 12, 19, 26, 28, 30, 32, 33, 41, 42, 43,
+        47, 48, 50, 53, 57, 60
+    ]
+
+    # Routers are all remaining nodes
+    routers = [n for n in topology.nodes() if n not in receivers + original_sources]
+
+    # Designate root servers, TLD servers, and name servers
+    root_servers = original_sources[:1]
+    tld_servers = original_sources[1:2]
+    name_servers = original_sources[2:]
+
+    # Deploy stacks
+    icr_candidates = routers
+    topology.graph["icr_candidates"] = set(icr_candidates)
+
+    for v in root_servers:
+        fnss.add_stack(topology, v, "source", contents=["tld_records"])
+    for v in tld_servers:
+        fnss.add_stack(topology, v, "source", contents=["ns_records"])
+    for i, v in enumerate(name_servers):
+        fnss.add_stack(topology, v, "source", contents=[f"domain_{i+1}"])
+    for v in receivers:
+        fnss.add_stack(topology, v, "receiver")
+    for v in routers:
+        fnss.add_stack(topology, v, "router", cache_size=10000)
+
+    # Set weights and delays on all links
+    fnss.set_weights_constant(topology, 1.0)
+    fnss.set_delays_constant(topology, INTERNAL_LINK_DELAY, "ms")
+
+    # Label links as internal or external
+    for u, v in topology.edges():
+        if u in original_sources or v in original_sources:
+            topology.adj[u][v]["type"] = "external"
+            # Prevent sources from being used to route traffic
+            fnss.set_weights_constant(topology, 1000.0, [(u, v)])
+            fnss.set_delays_constant(topology, EXTERNAL_LINK_DELAY, "ms", [(u, v)])
+        else:
+            topology.adj[u][v]["type"] = "internal"
+
+    return IcnTopology(topology)

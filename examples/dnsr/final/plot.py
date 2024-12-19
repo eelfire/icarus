@@ -59,24 +59,61 @@ STRATEGY_LEGEND = {
 }
 
 # Color and hatch styles for bar charts of cache hit ratio and link load vs topology
-STRATEGY_BAR_COLOR = {
-    "LCE": "k",
-    "LCD": "0.4",
-    "PROB_CACHE": "0.5",
-    "NO_CACHE": "0.6",
-    "EDGE":"0.7",
-    "CL4M":"0.8",
-    "RAND_BERNOULLI":"0.9",
-}
+# STRATEGY_BAR_COLOR = {
+#     "LCE": "k",
+#     "LCD": "0.4",
+#     "PROB_CACHE": "0.5",
+#     "NO_CACHE": "0.6",
+#     "EDGE":"0.7",
+#     "CL4M":"0.8",# STRATEGY_BAR_HATCH = {
+#     "LCE": None,
+#     "LCD": None,
+#     "PROB_CACHE": None,
+#     "NO_CACHE": None,
+#     "EDGE": None,
+#     "CL4M": None,
+#     "RAND_BERNOULLI": None,
+# }
 
 STRATEGY_BAR_HATCH = {
     "LCE": None,
     "LCD": "//",
     "PROB_CACHE": "x",
     "NO_CACHE": "+",
-    "EDGE":"\\",
-    "CL4M":"O",
-    "RAND_BERNOULLI":"|",
+    "EDGE": "\\",
+    "CL4M": "O",
+    "RAND_BERNOULLI": "|",
+}
+
+#     "RAND_BERNOULLI":"0.9",
+# }
+STRATEGY_BAR_COLOR = {
+    "LCE": "#55a868",  # Green
+    "LCD": "#ff9f4a",  # Orange
+    "PROB_CACHE": "#c44e52",  # Red
+    "NO_CACHE": "#4c72b0",  # Blue
+    "EDGE": "#ccb974",  # Gold
+    "CL4M": "#64b5cd",  # Cyan
+    "RAND_BERNOULLI": "#8c8c8c",  # Grey
+}
+
+# STRATEGY_BAR_HATCH = {
+#     "LCE": None,
+#     "LCD": "//",
+#     "PROB_CACHE": "x",
+#     "NO_CACHE": "+",
+#     "EDGE":"\\",
+#     "CL4M":"O",
+#     "RAND_BERNOULLI":"|",
+# }
+STRATEGY_BAR_HATCH = {
+    "LCE": None,
+    "LCD": None,
+    "PROB_CACHE": None,
+    "NO_CACHE": None,
+    "EDGE": None,
+    "CL4M": None,
+    "RAND_BERNOULLI":None,
 }
 
 
