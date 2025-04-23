@@ -76,6 +76,7 @@ TOPOLOGIES = [
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = [
     "NO_CACHE",
+    "NO_CACHE_DNSSEC", 
     "LCD",  # No caching, shortest-path routing (Traditional DNS)
     "LCE",
     "PROB_CACHE",
@@ -134,7 +135,7 @@ default["cache_policy"]["name"] = CACHE_POLICY
 
 for alpha in ALPHA:
     for network_cache in NETWORK_CACHE:
-        for strategy in STRATEGIES[1:]:
+        for strategy in STRATEGIES[2:]:
             experiment = copy.deepcopy(default)
             experiment["workload"]["alpha"] = alpha
             experiment["strategy"]["name"] = strategy
@@ -147,3 +148,31 @@ for alpha in ALPHA:
                 str(network_cache),
             )
             EXPERIMENT_QUEUE.append(experiment)
+
+default = Tree()
+default["workload"] = {
+    "name": "DNSSEC_HIERARCHIAL",
+    "n_contents": N_CONTENTS,
+    "n_warmup": N_WARMUP_REQUESTS,
+    "n_measured": N_MEASURED_REQUESTS,
+    "rate": NETWORK_REQUEST_RATE,
+}
+default["cache_placement"]["name"] = "UNIFORM"
+default["content_placement"]["name"] = "UNIFORM"
+default["cache_policy"]["name"] = CACHE_POLICY
+
+# Create experiments multiplexing all desired parameters
+for alpha in ALPHA:
+    for network_cache in NETWORK_CACHE:
+        experiment = copy.deepcopy(default)
+        experiment["workload"]["alpha"] = alpha
+        experiment["strategy"]["name"] = "NO_CACHE_DNSSEC"
+        experiment["topology"]["name"] = "GEANT_DNS"
+        experiment["cache_placement"]["network_cache"] = network_cache
+        experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
+            str(alpha),
+            "NO_CACHE_DNSSEC",
+            "GEANT_DNS",
+            str(network_cache),
+        )
+        EXPERIMENT_QUEUE.append(experiment)

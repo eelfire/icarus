@@ -79,3 +79,31 @@ class NoCache(Strategy):
         path = list(reversed(path))
         self.controller.forward_content_path(source, receiver, path)
         self.controller.end_session()
+
+@register_strategy("NO_CACHE_DNSSEC")
+class NoCache_dnssec(Strategy):
+    """Strategy without any caching
+
+    This corresponds to the traffic in a normal TCP/IP network without any
+    CDNs or overlay caching, where all content requests are served by the
+    original source.
+    """
+
+    @inheritdoc(Strategy)
+    def __init__(self, view, controller, **kwargs):
+        super().__init__(view, controller)
+
+    @inheritdoc(Strategy)
+    def process_event(self, time, receiver, content, log):
+        # get all required data
+        source = self.view.content_source(content)
+        # print("DEBUG: source = ", source, content)
+        path = self.view.shortest_path(receiver, source)
+        # Route requests to original source
+        self.controller.start_session(time, receiver, content, log)
+        self.controller.forward_request_path(receiver, source)
+        self.controller.get_content(source)
+        # Route content back to receiver
+        path = list(reversed(path))
+        self.controller.forward_content_path(source, receiver, path)
+        self.controller.end_session()

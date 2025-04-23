@@ -45,6 +45,7 @@ STRATEGY_STYLE = {
     "EDGE":"r-v",
     "CL4M":"b--p",
     "RAND_BERNOULLI":"g-->",
+    "NO_CACHE_DNSSEC":"r-<",
 }
 
 # This dict maps name of strategies to names to be displayed in the legend
@@ -56,6 +57,7 @@ STRATEGY_LEGEND = {
     "EDGE":"dns-ndn-edge",
     "CL4M":"dns-ndn-cl4m",
     "RAND_BERNOULLI":"dns-ndn-rand-bernoulli",
+    "NO_CACHE_DNSSEC":"dnssec-hierarchial",
 }
 
 # Color and hatch styles for bar charts of cache hit ratio and link load vs topology
@@ -83,6 +85,7 @@ STRATEGY_BAR_HATCH = {
     "EDGE": "\\",
     "CL4M": "O",
     "RAND_BERNOULLI": "|",
+    "NO_CACHE_DNSSEC":"-",
 }
 
 #     "RAND_BERNOULLI":"0.9",
@@ -94,7 +97,8 @@ STRATEGY_BAR_COLOR = {
     "NO_CACHE": "#4c72b0",  # Blue
     "EDGE": "#ccb974",  # Gold
     "CL4M": "#64b5cd",  # Cyan
-    "RAND_BERNOULLI": "#8c8c8c",  # Grey
+    "RAND_BERNOULLI": "#8c8c8c",  # Gray
+    "NO_CACHE_DNSSEC":"#ff69b4",  # Pink
 }
 
 # STRATEGY_BAR_HATCH = {
@@ -114,6 +118,7 @@ STRATEGY_BAR_HATCH = {
     "EDGE": None,
     "CL4M": None,
     "RAND_BERNOULLI":None,
+    "NO_CACHE_DNSSEC":None,
 }
 
 
@@ -235,6 +240,7 @@ def run(config, results, plotdir):
     cache_sizes = settings.NETWORK_CACHE
     alphas = settings.ALPHA
     strategies = settings.STRATEGIES
+    print("[DEBUG] strategies = ", strategies)
     # collectors = settings.DATA_COLLECTORS
     
     # Plot graphs
