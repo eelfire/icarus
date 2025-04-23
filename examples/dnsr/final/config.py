@@ -68,7 +68,7 @@ N_WARMUP_REQUESTS = 11
 N_MEASURED_REQUESTS = 500
 
 TOPOLOGIES = [
-    "GEANT_DNS",
+    "GARR_DNS",
     "DNS"
 ]
 
@@ -111,12 +111,12 @@ for alpha in ALPHA:
         experiment = copy.deepcopy(default)
         experiment["workload"]["alpha"] = alpha
         experiment["strategy"]["name"] = "NO_CACHE"
-        experiment["topology"]["name"] = "GEANT_DNS"
+        experiment["topology"]["name"] = "GARR_DNS"
         experiment["cache_placement"]["network_cache"] = network_cache
         experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
             str(alpha),
             "NO_CACHE",
-            "GEANT_DNS",
+            "GARR_DNS",
             str(network_cache),
         )
         EXPERIMENT_QUEUE.append(experiment)
@@ -139,12 +139,12 @@ for alpha in ALPHA:
             experiment = copy.deepcopy(default)
             experiment["workload"]["alpha"] = alpha
             experiment["strategy"]["name"] = strategy
-            experiment["topology"]["name"] = "GEANT_DNS"
+            experiment["topology"]["name"] = "GARR_DNS"
             experiment["cache_placement"]["network_cache"] = network_cache
             experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
                 str(alpha),
                 strategy,
-                "GEANT_DNS",
+                "GARR_DNS",
                 str(network_cache),
             )
             EXPERIMENT_QUEUE.append(experiment)
@@ -167,12 +167,12 @@ for alpha in ALPHA:
         experiment = copy.deepcopy(default)
         experiment["workload"]["alpha"] = alpha
         experiment["strategy"]["name"] = "NO_CACHE_DNSSEC"
-        experiment["topology"]["name"] = "GEANT_DNS"
+        experiment["topology"]["name"] = "GARR_DNS"
         experiment["cache_placement"]["network_cache"] = network_cache
         experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
             str(alpha),
             "NO_CACHE_DNSSEC",
-            "GEANT_DNS",
+            "GARR_DNS",
             str(network_cache),
         )
         EXPERIMENT_QUEUE.append(experiment)
