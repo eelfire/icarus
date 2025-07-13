@@ -243,7 +243,7 @@ class LinkLoadCollector(DataCollector):
         req_size : int
             Average size (in bytes) of a request
         content_size : int
-            Average size (in byte) of a content
+            Average size (in bytes) of a content
         """
         self.view = view
         self.req_count = collections.defaultdict(int)
@@ -673,6 +673,7 @@ class DNS_LatencyCollector(DataCollector):
 
     @inheritdoc(DataCollector)
     def results(self):
+        print(f"[DEBUG] latency = {self.latency}, sess count = {self.sess_count}")
         results = Tree({"MEAN": self.latency / self.sess_count})
         if self.cdf:
             results["CDF"] = cdf(self.latency_data)
@@ -752,6 +753,8 @@ class DNS_HopsCollector(DataCollector):
                 "MEAN_REQUEST": self.mean_req_stretch / self.sess_count,
                 "MEAN_CONTENT": self.mean_cont_stretch / self.sess_count,
                 "MEAN_HOPS": self.total_hops / self.sess_count,
+                "TOTAL_HOPS": self.total_hops,
+                "SESSIONS": self.sess_count,
             }
         )
         if self.cdf:
@@ -761,6 +764,267 @@ class DNS_HopsCollector(DataCollector):
             results["CDF_HOPS"] = cdf(self.total_hops_data)
         return results   
 
+@register_data_collector("DNS_H_NETWORK_LOAD")
+class DNSHNetworkLoadCollector(DataCollector):
+    def __init__(self, view, cdf=False):
+        """Constructor
+
+        Parameters
+        ----------
+        view : NetworkView
+            The network view instance
+        cdf : bool, optional
+            If *True*, also collects a cdf of the path stretch
+        """
+        self.view = view
+        self.cdf = cdf
+        self.req_path_len = collections.defaultdict(int)
+        self.cont_path_len = collections.defaultdict(int)
+        self.sess_count = 0
+        self.mean_req_stretch = 0.0
+        self.mean_cont_stretch = 0.0
+        self.mean_stretch = 0.0
+        self.total_hops = 0
+        if self.cdf:
+            self.req_stretch_data = collections.deque()
+            self.cont_stretch_data = collections.deque()
+            self.stretch_data = collections.deque()
+            self.total_hops_data = collections.deque()
+
+    @inheritdoc(DataCollector)
+    def start_session(self, timestamp, receiver, content):
+        self.receiver = receiver
+        self.source = self.view.content_source(content)
+        self.req_path_len = 0
+        self.cont_path_len = 0
+        if ("domain" in content):
+            self.sess_count += 1
+        else:
+            self.sess_count += 0 # because this might tld record or ns record query.
+
+    @inheritdoc(DataCollector)
+    def request_hop(self, u, v, main_path=True):
+        self.req_path_len += 1
+
+    @inheritdoc(DataCollector)
+    def content_hop(self, u, v, main_path=True):
+        self.cont_path_len += 1
+
+    @inheritdoc(DataCollector)
+    def end_session(self, success=True):
+        if not success:
+            return
+        req_sp_len = len(self.view.shortest_path(self.receiver, self.source))
+        cont_sp_len = len(self.view.shortest_path(self.source, self.receiver))
+        req_stretch = self.req_path_len / req_sp_len
+        cont_stretch = self.cont_path_len / cont_sp_len
+        stretch = (self.req_path_len + self.cont_path_len) / (req_sp_len + cont_sp_len)
+        total_hops = self.req_path_len + self.cont_path_len
+        self.mean_req_stretch += req_stretch
+        self.mean_cont_stretch += cont_stretch
+        self.mean_stretch += stretch
+        self.total_hops += total_hops
+        if self.cdf:
+            self.req_stretch_data.append(req_stretch)
+            self.cont_stretch_data.append(cont_stretch)
+            self.stretch_data.append(stretch)
+            self.total_hops_data.append(total_hops)
+
+    @inheritdoc(DataCollector)
+    def results(self):
+        results = Tree(
+            {
+                "MEAN": self.mean_stretch / self.sess_count,
+                "MEAN_REQUEST": self.mean_req_stretch / self.sess_count,
+                "MEAN_CONTENT": self.mean_cont_stretch / self.sess_count,
+                "MEAN_HOPS": self.total_hops / self.sess_count,
+                "MEAN_NETWORK_LOAD": ((self.mean_req_stretch / self.sess_count)*35) + ((self.mean_cont_stretch / self.sess_count)*143), 
+            }
+        )
+        if self.cdf:
+            results["CDF"] = cdf(self.stretch_data)
+            results["CDF_REQUEST"] = cdf(self.req_stretch_data)
+            results["CDF_CONTENT"] = cdf(self.cont_stretch_data)
+            results["CDF_HOPS"] = cdf(self.total_hops_data)
+        return results   
+
+@register_data_collector("DNS_NETWORK_LOAD")
+class DNSNetworkLoadCollector(DataCollector):
+    def __init__(self, view, cdf=False):
+        """Constructor
+
+        Parameters
+        ----------
+        view : NetworkView
+            The network view instance
+        cdf : bool, optional
+            If *True*, also collects a cdf of the path stretch
+        """
+        self.view = view
+        self.cdf = cdf
+        self.req_path_len = collections.defaultdict(int)
+        self.cont_path_len = collections.defaultdict(int)
+        self.sess_count = 0
+        self.mean_req_stretch = 0.0
+        self.mean_cont_stretch = 0.0
+        self.mean_stretch = 0.0
+        self.total_hops = 0
+        if self.cdf:
+            self.req_stretch_data = collections.deque()
+            self.cont_stretch_data = collections.deque()
+            self.stretch_data = collections.deque()
+            self.total_hops_data = collections.deque()
+
+    @inheritdoc(DataCollector)
+    def start_session(self, timestamp, receiver, content):
+        self.receiver = receiver
+        self.source = self.view.content_source(content)
+        self.req_path_len = 0
+        self.cont_path_len = 0
+        if ("domain" in content):
+            self.sess_count += 1
+        else:
+            self.sess_count += 0 # because this might tld record or ns record query.
+
+    @inheritdoc(DataCollector)
+    def request_hop(self, u, v, main_path=True):
+        self.req_path_len += 1
+
+    @inheritdoc(DataCollector)
+    def content_hop(self, u, v, main_path=True):
+        self.cont_path_len += 1
+
+    @inheritdoc(DataCollector)
+    def end_session(self, success=True):
+        if not success:
+            return
+        req_sp_len = len(self.view.shortest_path(self.receiver, self.source))
+        cont_sp_len = len(self.view.shortest_path(self.source, self.receiver))
+        req_stretch = self.req_path_len / req_sp_len
+        cont_stretch = self.cont_path_len / cont_sp_len
+        stretch = (self.req_path_len + self.cont_path_len) / (req_sp_len + cont_sp_len)
+        total_hops = self.req_path_len + self.cont_path_len
+        self.mean_req_stretch += req_stretch
+        self.mean_cont_stretch += cont_stretch
+        self.mean_stretch += stretch
+        self.total_hops += total_hops
+        if self.cdf:
+            self.req_stretch_data.append(req_stretch)
+            self.cont_stretch_data.append(cont_stretch)
+            self.stretch_data.append(stretch)
+            self.total_hops_data.append(total_hops)
+
+    @inheritdoc(DataCollector)
+    def results(self):
+        results = Tree(
+            {
+                "MEAN": self.mean_stretch / self.sess_count,
+                "MEAN_REQUEST": self.mean_req_stretch / self.sess_count,
+                "MEAN_CONTENT": self.mean_cont_stretch / self.sess_count,
+                "MEAN_HOPS": self.total_hops / self.sess_count,
+                "MEAN_NETWORK_LOAD": ((self.mean_req_stretch / self.sess_count)*35) + ((self.mean_cont_stretch / self.sess_count)*3000), 
+            }
+        )
+        if self.cdf:
+            results["CDF"] = cdf(self.stretch_data)
+            results["CDF_REQUEST"] = cdf(self.req_stretch_data)
+            results["CDF_CONTENT"] = cdf(self.cont_stretch_data)
+            results["CDF_HOPS"] = cdf(self.total_hops_data)
+        return results   
+        
+@register_data_collector("DNS_LINK_LOAD")
+class DNSLinkLoadCollector(DataCollector):
+    """Data collector measuring the link load"""
+
+    def __init__(self, view, req_size=35, content_size=113):
+        """Constructor
+
+        Parameters
+        ----------
+        view : NetworkView
+            The network view instance
+        req_size : int
+            Average size (in bytes) of a request
+        content_size : int
+            Average size (in bytes) of a content
+        """
+        self.view = view
+        self.req_count = collections.defaultdict(int)
+        self.cont_count = collections.defaultdict(int)
+        if req_size <= 0 or content_size <= 0:
+            raise ValueError("req_size and content_size must be positive")
+        self.req_size = req_size
+        self.content_size = content_size
+        self.t_start = -1
+        self.t_end = 1
+
+    @inheritdoc(DataCollector)
+    def start_session(self, timestamp, receiver, content):
+        if ('domain' in content):
+            self.req_size = 35
+            self.content_size = 113
+        elif ('tld_records' == content): 
+            self.req_size = 21
+            self.content_size = 90
+        else:
+            self.req_size = 17
+            self.content_size = 92
+        if self.t_start < 0:
+            self.t_start = timestamp
+        self.t_end = timestamp
+
+    @inheritdoc(DataCollector)
+    def request_hop(self, u, v, main_path=True):
+        # print(f"[DEBUG] req_size = {self.req_size}")
+        self.req_count[(u, v)] += self.req_size
+
+    @inheritdoc(DataCollector)
+    def content_hop(self, u, v, main_path=True):
+        # print(f"[DEBUG] content_size = {self.content_size}")
+        self.cont_count[(u, v)] += self.content_size
+
+    @inheritdoc(DataCollector)
+    def results(self):
+        duration = self.t_end - self.t_start
+        used_links = set(self.req_count.keys()).union(set(self.cont_count.keys()))
+        link_loads = {
+            link: (
+                self.req_count[link]
+                + self.cont_count[link]
+            )
+            / duration
+            for link in used_links
+        }
+        link_loads_int = {
+            link: load
+            for link, load in link_loads.items()
+            if self.view.link_type(*link) == "internal"
+        }
+        link_loads_ext = {
+            link: load
+            for link, load in link_loads.items()
+            if self.view.link_type(*link) == "external"
+        }
+        mean_load_int = (
+            sum(link_loads_int.values()) / len(link_loads_int)
+            if len(link_loads_int) > 0
+            else 0
+        )
+        mean_load_ext = (
+            sum(link_loads_ext.values()) / len(link_loads_ext)
+            if len(link_loads_ext) > 0
+            else 0
+        )
+        print(f"[DEBUG] mean_load_int = {mean_load_int}")
+        return Tree(
+            {
+                "MEAN_INTERNAL": mean_load_int,
+                "MEAN_EXTERNAL": mean_load_ext,
+                "PER_LINK_INTERNAL": link_loads_int,
+                "PER_LINK_EXTERNAL": link_loads_ext,
+            }
+        )
+    
 @register_data_collector("DUMMY")
 class DummyCollector(DataCollector):
     """Dummy collector to be used for test cases only."""

@@ -7,6 +7,7 @@ import collections
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import scienceplots
 
 from icarus.util import Tree, step_cdf
 from icarus.tools import means_confidence_interval
@@ -23,13 +24,20 @@ __all__ = ["plot_lines", "plot_bar_chart", "plot_cdf"]
 
 # If True text is interpreted as LaTeX, e.g. underscore are interpreted as
 # subscript. If False, text is interpreted literally
-plt.rcParams["text.usetex"] = False
+plt.rcParams["text.usetex"] = True
 
 # Aspect ratio of the output figures
-plt.rcParams["figure.figsize"] = 8, 5
+plt.rcParams["figure.figsize"] = 6,6
 
 # Size of font in legends
-LEGEND_SIZE = 14
+LEGEND_SIZE = 16
+
+# Size of font in axis labels
+plt.rcParams["font.size"] = 20
+plt.rc("font", family="Open Sans", size=20)
+
+# Set font family to sans-serif
+# plt.rcParams["font.family"] = "sans-serif"
 
 # Plot
 PLOT_EMPTY_GRAPHS = False
@@ -359,9 +367,12 @@ def plot_bar_chart(resultset, desc, filename, plotdir):
         The upper limit of the y axis. If not specified, it is automatically
         selected by Matplotlib
     """
+    # with plt.style.context(["science", "no-latex"]):
+    #     plt.rcParams["figure.figsize"] = 8, 5
+
     fig = plt.figure()
     _, ax1 = plt.subplots()
-    plt.grid(which="major", color="k", axis="y", linestyle=":")
+    # plt.grid(which="major", color="k", axis="y", linestyle=":")
     if "title" in desc:
         plt.title(desc["title"])
     # Set axis below bars
@@ -445,17 +456,30 @@ def plot_bar_chart(resultset, desc, filename, plotdir):
                 yerr = None if "errorbar" in desc and not desc["errorbar"] else err
                 if not np.isnan(meanval):
                     empty = False
-                elem[yvals[l]] = plt.bar(
+                bar_container = plt.bar(
                     left,
                     meanval,
                     width,
-                    color=color[yvals[l]],
+                    color="white",
                     yerr=yerr,
                     bottom=bottom,
                     ecolor="k",
                     hatch=hatch[yvals[l]],
                     label=yvals[l],
                 )
+                elem[yvals[l]] = bar_container
+                if "hatch_color" in desc:
+                    hatch_color = desc["hatch_color"]
+                    for patch in bar_container.patches:
+                        patch.set_edgecolor("black")
+                        # print(f"[DEBUG] Setting hatch color {hatch_color[yvals[l]]} for {yvals[l]}")
+                        patch._hatch_color = hatch_color[yvals[l]]
+                # else:
+                # hatch_color = desc["hatch_color"] if "hatch_color" in desc else BW_COLOR_CATALOGUE
+                # for patch in bar_container.patches:
+                #     patch.set_edgecolor("black")
+                #     patch._hatch_color = hatch_color[yvals[l]]
+
                 bottom += meanval
                 l += 1
             left += width
@@ -481,6 +505,7 @@ def plot_bar_chart(resultset, desc, filename, plotdir):
     plt.xlim(xmin, left - separation + border)
     if "ymax" in desc:
         plt.ylim(ymax=desc["ymax"])
+        
     plt.savefig(os.path.join(plotdir, filename), bbox_inches="tight")
     plt.close(fig)
 

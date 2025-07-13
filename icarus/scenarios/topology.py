@@ -1206,6 +1206,7 @@ def topology_geant_dns(**kwargs):
     # print("[DEBUG] Sizes:", len(root_servers), len(tld_servers), len(name_servers))
 
     routers = [v for v in topology.nodes() if v not in sources + receivers]
+    print("[DEBUG] Sizes:", len(routers), len(icr_candidates))
     # add stacks to nodes
     topology.graph["icr_candidates"] = set(icr_candidates)
 
@@ -1361,7 +1362,7 @@ def topology_garr_dns(**kwargs):
 
     # Routers are all remaining nodes
     routers = [n for n in topology.nodes() if n not in receivers + original_sources]
-
+    print("[DEBUG] Sizes:", len(original_sources), len(receivers), len(routers))
     # Designate root servers, TLD servers, and name servers
     root_servers = original_sources[:1]
     tld_servers = original_sources[1:2]

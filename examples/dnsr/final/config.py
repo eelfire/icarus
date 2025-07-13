@@ -49,15 +49,17 @@ DATA_COLLECTORS = ["DNS_LATENCY", "CACHE_HIT_RATIO", "DNS_HOPS"]
 # example I wanted to filter experiment with alpha=0.8, experiments with
 # alpha = 0.799999999999 would not be recognized
 ALPHA = [0.25, 0.5, 1.0, 2.0]
+# ALPHA = [1,]
 
 # Total size of network cache as a fraction of content population
-NETWORK_CACHE = [0.005, 0.01, 0.05, 0.1]
+# NETWORK_CACHE = [0.005, 0.01, 0.05, 0.1]
+NETWORK_CACHE = [1]
 
 # Number of content objects
 N_CONTENTS = 11
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = 6.0
+NETWORK_REQUEST_RATE = 1.0
 
 # Number of content requests generated to prepopulate the caches
 # These requests are not logged
@@ -67,19 +69,20 @@ N_WARMUP_REQUESTS = 11
 # to generate results.
 N_MEASURED_REQUESTS = 500
 
-TOPOLOGIES = [
-    "GARR_DNS",
-    "DNS"
-]
+# TOPOLOGIES = [
+#     "GARR_DNS",
+#     # "DNS",
+# ]
+TOPOLOGY = "GARR_DNS"  # Default topology used in the experiments # CHANGED WITH EXPERIMENTS
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = [
-    "NO_CACHE",
+    "NO_CACHE", # No caching, shortest-path routing (Traditional DNS)
     "NO_CACHE_DNSSEC", 
-    "LCD",  # No caching, shortest-path routing (Traditional DNS)
-    "LCE",
-    "PROB_CACHE",
+    # "LCD",  
+    "LCE", # USE FOR GARR
+    # "PROB_CACHE", # USE FOR GEANT
     # "EDGE",
     # "CL4M",
     # "RAND_BERNOULLI",
@@ -88,9 +91,14 @@ STRATEGIES = [
 # Cache replacement policy used by the network caches.
 # Supported policies are: 'LRU', 'LFU', 'FIFO', 'RAND' and 'NULL'
 # Cache policy implmentations are located in ./icarus/models/cache.py
-CACHE_POLICY = "LRU"
+CACHE_POLICY = "LRU" # [TODO] add more policies
+CACHE_POLICIES = [
+    "LRU",
+    # "PERFECT_LFU",
+    # "FIFO",
+]
 
-
+## DNS expermeints
 # Queue of experiments
 EXPERIMENT_QUEUE = deque()
 default = Tree()
@@ -103,24 +111,29 @@ default["workload"] = {
 }
 default["cache_placement"]["name"] = "UNIFORM"
 default["content_placement"]["name"] = "UNIFORM"
-default["cache_policy"]["name"] = CACHE_POLICY
+default["topology"]["name"] = TOPOLOGY
+# default["cache_policy"]["name"] = CACHE_POLICY
 
 # Create experiments multiplexing all desired parameters
 for alpha in ALPHA:
     for network_cache in NETWORK_CACHE:
-        experiment = copy.deepcopy(default)
-        experiment["workload"]["alpha"] = alpha
-        experiment["strategy"]["name"] = "NO_CACHE"
-        experiment["topology"]["name"] = "GARR_DNS"
-        experiment["cache_placement"]["network_cache"] = network_cache
-        experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
-            str(alpha),
-            "NO_CACHE",
-            "GARR_DNS",
-            str(network_cache),
-        )
-        EXPERIMENT_QUEUE.append(experiment)
+        for policy in CACHE_POLICIES:
+            experiment = copy.deepcopy(default)
+            experiment["workload"]["alpha"] = alpha
+            experiment["strategy"]["name"] = "NO_CACHE"
+            # experiment["topology"]["name"] = "GARR_DNS"
+            experiment["cache_placement"]["network_cache"] = network_cache
+            experiment["cache_policy"]["name"] = policy
+            experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
+                str(alpha),
+                "NO_CACHE",
+                TOPOLOGY,
+                str(network_cache),
+            )
+            EXPERIMENT_QUEUE.append(experiment)
 
+
+## NDN-DNS experiments
 default = Tree()
 default["workload"] = {
     "name": "DNS_NDN",
@@ -132,23 +145,28 @@ default["workload"] = {
 default["cache_placement"]["name"] = "UNIFORM"
 default["content_placement"]["name"] = "UNIFORM"
 default["cache_policy"]["name"] = CACHE_POLICY
+default["topology"]["name"] = TOPOLOGY
 
 for alpha in ALPHA:
     for network_cache in NETWORK_CACHE:
         for strategy in STRATEGIES[2:]:
-            experiment = copy.deepcopy(default)
-            experiment["workload"]["alpha"] = alpha
-            experiment["strategy"]["name"] = strategy
-            experiment["topology"]["name"] = "GARR_DNS"
-            experiment["cache_placement"]["network_cache"] = network_cache
-            experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
-                str(alpha),
-                strategy,
-                "GARR_DNS",
-                str(network_cache),
-            )
-            EXPERIMENT_QUEUE.append(experiment)
+            for policy in CACHE_POLICIES:
+                experiment = copy.deepcopy(default)
+                experiment["workload"]["alpha"] = alpha
+                experiment["strategy"]["name"] = strategy
+                # experiment["topology"]["name"] = "GEANT_DNS"
+                experiment["cache_placement"]["network_cache"] = network_cache
+                experiment["cache_policy"]["name"] = policy
+                experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
+                    str(alpha),
+                    strategy,
+                    TOPOLOGY,
+                    str(network_cache),
+                )
+                EXPERIMENT_QUEUE.append(experiment)
 
+
+## DNSSEC experiments
 default = Tree()
 default["workload"] = {
     "name": "DNSSEC_HIERARCHIAL",
@@ -160,19 +178,22 @@ default["workload"] = {
 default["cache_placement"]["name"] = "UNIFORM"
 default["content_placement"]["name"] = "UNIFORM"
 default["cache_policy"]["name"] = CACHE_POLICY
+default["topology"]["name"] = TOPOLOGY
 
 # Create experiments multiplexing all desired parameters
 for alpha in ALPHA:
     for network_cache in NETWORK_CACHE:
-        experiment = copy.deepcopy(default)
-        experiment["workload"]["alpha"] = alpha
-        experiment["strategy"]["name"] = "NO_CACHE_DNSSEC"
-        experiment["topology"]["name"] = "GARR_DNS"
-        experiment["cache_placement"]["network_cache"] = network_cache
-        experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
-            str(alpha),
-            "NO_CACHE_DNSSEC",
-            "GARR_DNS",
-            str(network_cache),
-        )
-        EXPERIMENT_QUEUE.append(experiment)
+        for policy in CACHE_POLICIES:
+            experiment = copy.deepcopy(default)
+            experiment["workload"]["alpha"] = alpha
+            experiment["strategy"]["name"] = "NO_CACHE_DNSSEC"
+            # experiment["topology"]["name"] = "GARR_DNS"
+            experiment["cache_placement"]["network_cache"] = network_cache
+            experiment["cache_policy"]["name"] = policy
+            experiment["desc"] = "Alpha: {}, strategy: {}, topology: {}, network cache: {}".format(
+                str(alpha),
+                "NO_CACHE_DNSSEC",
+                TOPOLOGY,
+                str(network_cache),
+            )
+            EXPERIMENT_QUEUE.append(experiment)
